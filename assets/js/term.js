@@ -4,10 +4,6 @@ class Terminal {
       this.lines = 24;
       this.cursor = { x: 0, y: 0 };
       this.inputBuffer = "";
-      this.blankLine = "";
-      for (let j = 0; j < this.cols; j++) {
-         this.blankLine += " ";
-      }
       this.newLineBuffer();
    }
 
@@ -15,25 +11,50 @@ class Terminal {
       this.display = [];
 
       for (let i = 0; i < this.lines; i++) {
-         this.display.push(this.blankLine);
+         this.display.push("");
       }
       this.setCursor(0, 0);
    }
 
    lineFeed() {
-      // If at the last line, reset cursor column to 0 and scroll text
+      // If at the last line, scroll text and reset cursor column to 0
       if (this.cursor.y === this.lines - 1) {
-         this.setCursor(0, this.cursor.y);
          this.display = this.display.slice(1);
-         this.display.push(this.blankLine);
-
+         this.display.push("");
+         this.setCursor(0, this.cursor.y);
       }
-      // Set cursor to the left and down 
+      // Set cursor to the left and down
       else this.setCursor(0, this.cursor.y + 1);
    }
 
-   returnChar() {
+   backspace() {
+      if (this.cursor.x === 0 && this.cursor.y === 0) return false;
 
+      // The string contents of the line we're modifying
+      let bufferLine;
+      // The index of the line being modified
+      let line;
+      // The index of the char being deleting
+      let column;
+
+      if (this.cursor.x === 0) {
+         line = this.cursor.y - 1;
+         column = this.display[line].length - 1;
+      } else {
+         line = this.cursor.y;
+         column = this.cursor.x - 1;
+      }
+
+      bufferLine = this.display[line];
+
+      if (column === 0) {
+         this.display[line] = bufferLine.slice(column + 1);
+      } else {
+         this.display[line] =
+            bufferLine.slice(0, column) + bufferLine.slice(column + 1);
+      }
+
+      this.setCursor(column, line);
    }
 
    del(line, cursor = this.cursor) {
@@ -66,8 +87,11 @@ class Terminal {
    }
 
    writeCursor() {
-      const cursorType = "█";
-      this.insertChar(cursorType, this.cursor.x, this.cursor.y);
+      // VT220 style cursors, 0 for block; 1 for underline
+      const cursorStrings = ["█", "_"];
+      const cursorType = 0;
+
+      this.insertChar(cursorStrings[cursorType], this.cursor.x, this.cursor.y);
    }
 
    insertChar(char, column, line) {

@@ -1,4 +1,6 @@
 const displayHz = 1 / 60;
+const COLS = 80;
+const LINES = 24;
 
 var displayRefreshInterval;
 var term = new Terminal();
@@ -16,6 +18,7 @@ function displayRefresh(interval, terminal) {
 
       if (buffer !== lastBuffer) {
          writeDisplay(terminal);
+         console.log("printed");
       }
 
       lastBuffer = buffer;
@@ -25,7 +28,7 @@ function displayRefresh(interval, terminal) {
 function writeDisplay(terminal) {
    display.textContent = "";
    terminal.display.forEach((line) => {
-      display.textContent += line + "\n";
+      display.textContent += line.padEnd(COLS, " ") + "\n";
    });
 }
 
@@ -39,6 +42,9 @@ function keyHandler(event) {
    } else if (event.key === "Enter") {
       term.lineFeed();
       term.readInputBuffer();
+   }
+   else if (event.key === "Backspace") {
+      term.backspace();
    }
 }
 
