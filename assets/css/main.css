@@ -14,16 +14,17 @@ h1 {
    display: flex;
    justify-content: center;
    align-items: center;
-   overflow: scroll;
+   background-color: #aaa;
 }
 
 .terminal {
    background-color: #000000;
-   color: #00ff00;
+   color: #00ff84;
    font-family: "Fira Code", monospace;
-   font-size: .5rem;
+   font-size: 1rem;
    resize: none;
-   width: auto;
+   width: fit-content;
+   padding: 5px;
 }
 
 .terminal>pre {

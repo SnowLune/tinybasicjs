@@ -1,24 +1,33 @@
 const displayHz = 1 / 60;
 
-var displayLoopInterval;
+var displayRefreshInterval;
+var term = new Terminal();
 
 // Global Element Vars
-var display = document.querySelector(".terminal");
+var display = document.querySelector(".display");
+var blank = document.querySelector(".blank");
+var clearButtonEl = document.getElementById("clear");
 
-// function displayLoop(interval) {
-//    let buffer, lastBuffer;
-//    return (interval = setInterval(() => {
-//       buffer = display.value.split("\n").pop().toUpperCase();
+function displayRefresh(interval, terminal) {
+   let buffer = [];
+   let lastBuffer = [];
+   return (interval = setInterval(() => {
+      buffer = [...terminal.display].join("");
 
-//       if (buffer !== lastBuffer) {
-//          console.log(buffer);
-//          display.value = display.value.toUpperCase();
-//          if (buffer === "CLEAR") display.value = "";
-//       }
+      if (buffer !== lastBuffer) {
+         writeDisplay(terminal);
+      }
 
-//       lastBuffer = buffer;
-//    }, displayHz));
-// }
+      lastBuffer = buffer;
+   }, displayHz));
+}
+
+function writeDisplay(terminal) {
+   display.textContent = "";
+   terminal.display.forEach((line) => {
+      display.textContent += line + "\n";
+   });
+}
 
 // HANDLERS
 function keyHandler(event) {
@@ -26,25 +35,19 @@ function keyHandler(event) {
       " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`" +
       "abcdefghijklmnopqrstuvwxyz{|}~";
    if (printable.includes(event.key)) {
-      display.children[0].textContent = event.key.toUpperCase();
+      term.input(event.key.toUpperCase());
+   } else if (event.key === "Enter") {
+      term.lineFeed();
+      term.readInputBuffer();
    }
 }
 
-display.addEventListener("change", () => {
-   console.log(display.value);
-   display.focus();
-});
-
-display.addEventListener("blur", () => {
-   display.focus();
+clearButtonEl.addEventListener("click", () => {
+   term.clearScreen();
+   writeDisplay(term);
 });
 
 document.addEventListener("keydown", keyHandler);
-
 document.addEventListener("DOMContentLoaded", () => {
-   [...display.children].forEach((line) => {
-      for (let i = 0; i < 80; i++) {
-         line.textContent += "x";
-      }
-   });
+   displayRefresh(displayRefreshInterval, term);
 });
