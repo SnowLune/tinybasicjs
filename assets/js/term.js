@@ -4,10 +4,15 @@ class Terminal {
       this.lines = 24;
       this.cursor = { x: 0, y: 0 };
       this.inputBuffer = "";
-      this.newLineBuffer();
+      // VT220 style cursors, 0 for block; 1 for underline
+      this.cursorStrings = ["█", "_"];
+      this.cursorType = 0;
+      this.createNewBuffer();
+      this.memory;
+      this.program = new Program(this);
    }
 
-   newLineBuffer() {
+   createNewBuffer() {
       this.display = [];
 
       for (let i = 0; i < this.lines; i++) {
@@ -29,9 +34,13 @@ class Terminal {
 
    backspace() {
       if (this.cursor.x === 0 && this.cursor.y === 0) return false;
+      else if (this.inputBuffer.lengt === 0) {
+         console.warn("Input buffer is empty.");
+         return false;
+      }
 
       // The string contents of the line we're modifying
-      let bufferLine;
+      let lineBuffer;
       // The index of the line being modified
       let line;
       // The index of the char being deleting
@@ -39,21 +48,25 @@ class Terminal {
 
       if (this.cursor.x === 0) {
          line = this.cursor.y - 1;
-         column = this.display[line].length - 1;
+         column =
+            this.display[line].length === 0 ? 0 : this.display[line].length - 1;
       } else {
          line = this.cursor.y;
          column = this.cursor.x - 1;
       }
 
-      bufferLine = this.display[line];
+      console.log({ column, line });
+
+      lineBuffer = this.display[line];
 
       if (column === 0) {
-         this.display[line] = bufferLine.slice(column + 1);
+         this.display[line] = lineBuffer.slice(column + 1);
       } else {
          this.display[line] =
-            bufferLine.slice(0, column) + bufferLine.slice(column + 1);
+            lineBuffer.slice(0, column) + lineBuffer.slice(column + 1);
       }
 
+      this.inputBuffer = this.inputBuffer.slice(0, this.inputBuffer.length - 1);
       this.setCursor(column, line);
    }
 
@@ -65,7 +78,7 @@ class Terminal {
    }
 
    clearScreen() {
-      this.newLineBuffer();
+      this.createNewBuffer();
    }
 
    // Move the cursor forwards or backwards from it's current position
@@ -83,15 +96,14 @@ class Terminal {
       y = Math.min(this.lines - 1, y);
       this.cursor.x = x;
       this.cursor.y = y;
-      this.writeCursor();
    }
 
    writeCursor() {
-      // VT220 style cursors, 0 for block; 1 for underline
-      const cursorStrings = ["█", "_"];
-      const cursorType = 0;
-
-      this.insertChar(cursorStrings[cursorType], this.cursor.x, this.cursor.y);
+      this.insertChar(
+         this.cursorStrings[this.cursorType],
+         this.cursor.x,
+         this.cursor.y
+      );
    }
 
    insertChar(char, column, line) {
@@ -110,7 +122,6 @@ class Terminal {
 
       if (this.cursor.x === this.cols - 1) this.lineFeed();
       else this.setCursor(this.cursor.x + 1, this.cursor.y);
-      this.writeCursor();
    }
 
    input(char) {
@@ -118,7 +129,28 @@ class Terminal {
       this.insertCharAtCursor(char);
    }
 
-   readInputBuffer() {
+   readInputBuffer(input = this.inputBuffer) {
+      input = input.trim();
+      switch (input) {
+         case "CLEAR":
+            this.clearScreen();
+            break;
+         case "LIST":
+            let program = this.program.LIST;
+            program.forEach((s, i) => {
+               this.print(`${i} ${s}`);
+               this.lineFeed();
+            });
+            break;
+         case "RUN":
+            console.log("Running program...");
+            break;
+         default:
+            // Pass to program for further parsing
+            this.program.parse([input]);
+            break;
+      }
+
       // Clear input buffer
       this.inputBuffer = "";
    }

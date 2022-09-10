@@ -8,13 +8,9 @@ function tbRemark(remark) {
 
 function tbInput(input) {}
 
-function tbParse(statementString) {
-   let statement = statementString.split(" ");
-}
-
 class Program {
-   constructor() {
-      this.var = {
+   constructor(terminal) {
+      this.VAR = {
          A: undefined,
          B: undefined,
          C: undefined,
@@ -44,8 +40,13 @@ class Program {
       };
 
       // Single Array used by the program as @(I)
-      this.array = [];
-      this.list = [];
+      this.ARRAY = [];
+      this.LIST = [];
+      this.MEMORY = "";
+      this.MEMSIZE = 2 ** 15;
+      this.MAXINT = this.MEMSIZE;
+
+      this.terminal = terminal;
    }
 
    // Gives the absolute value of X.
@@ -62,4 +63,109 @@ class Program {
 
    // Gives the number of bytes left unused by the program.
    SIZE() {}
+
+   PRINT(string, terminal = this.terminal) {
+      if (typeof string !== "string") {
+         console.error(`PRINT: Expected string, got ${typeof string}`);
+         return false;
+      }
+      terminal.print(string.trim());
+      terminal.lineFeed();
+   }
+
+   REMARK(remarkString) {}
+
+   addStatement(statementString, statementNumber) {
+      this.LIST[statementNumber] = statementString;
+
+      if (this.MEMORY.length + statementString.length < this.MEMSIZE)
+         this.MEMORY = this.LIST.join("");
+      else this.ERROR(3);
+   }
+
+   ERROR(errorType, statementString, errorIndex) {
+      let errorString;
+      const errorMessage = [null, "WHAT?", "HOW?", "SORRY"];
+
+      this.PRINT(errorMessage[errorType]);
+
+      switch (errorType) {
+         case 1:
+            errorString =
+               statementString.slice(0, errorIndex) +
+               "?" +
+               statementString.slice(errorIndex);
+            this.PRINT(errorString);
+            break;
+         case 2:
+            break;
+         default:
+            break;
+      }
+
+      return errorType;
+   }
+
+   parse(statement) {
+      // Separate concatenated commands
+      if (statement.includes(";")) {
+         statement = statement.split(";");
+         statement = statement.map((c) => c.trim());
+      }
+
+      console.log(statement);
+
+      statement.forEach((command) => {
+         command = command.trim();
+         command = command.split(" ");
+
+         console.log(command);
+         switch (command[0]) {
+            case "PRINT":
+               let parameters = command.slice(1).join(" ");
+
+               let string;
+               let match;
+
+               if (parameters.includes('"')) {
+                  match = parameters.match(/\".*\"/);
+                  if (match) {
+                     string = match[0].replaceAll('"', "");
+                  }
+               } else if (parameters.includes("'")) {
+                  match = parameters.match(/\'.*\'/);
+                  if (match) {
+                     string = match[0].replaceAll("'", "");
+                  }
+               } else {
+                  this.ERROR(1, command.join(" "), command.join(" ").length);
+                  break;
+               }
+               this.PRINT(string, this.terminal);
+               break;
+            case "REM":
+               break;
+            case "REMARK":
+               break;
+            case "LIST":
+               this.LIST.forEach((s, i) => {
+                  this.PRINT(`${i} ${s}`);
+               });
+               break;
+            case "RUN":
+               console.log("Running program...");
+               break;
+            default:
+               if (command[0] % 1 === 0) {
+                  if (command.length === 1) {
+                     this.LIST[command[0]] = undefined;
+                  } else
+                     this.addStatement(command.splice(1).join(" "), command[0]);
+               } else {
+                  this.ERROR(3, command.join(" "));
+               }
+               break;
+         }
+      });
+   }
 }

@@ -1,6 +1,4 @@
 const displayHz = 1 / 60;
-const COLS = 80;
-const LINES = 24;
 
 var displayRefreshInterval;
 var term = new Terminal();
@@ -13,22 +11,34 @@ var clearButtonEl = document.getElementById("clear");
 function displayRefresh(interval, terminal) {
    let buffer = [];
    let lastBuffer = [];
+   let cursor = {};
+   let lastCursor = {};
+
    return (interval = setInterval(() => {
-      buffer = [...terminal.display].join("");
+      buffer = [...terminal.display].join(",");
+      cursor = `${terminal.cursor.x},${terminal.cursor.y}`;
 
-      if (buffer !== lastBuffer) {
+      if (buffer !== lastBuffer || cursor !== lastCursor) {
          writeDisplay(terminal);
-         console.log("printed");
       }
-
       lastBuffer = buffer;
-   }, displayHz));
+      lastCursor = cursor;
+   }, displayHz * 1000));
 }
 
 function writeDisplay(terminal) {
    display.textContent = "";
-   terminal.display.forEach((line) => {
-      display.textContent += line.padEnd(COLS, " ") + "\n";
+   terminal.display.forEach((line, lineNumber) => {
+      let lineBuffer = "";
+
+      for (let j = 0; j <= line.length; j++) {
+         if (lineNumber === terminal.cursor.y && j === terminal.cursor.x) {
+            lineBuffer += terminal.cursorStrings[terminal.cursorType];
+         } else {
+            lineBuffer += line[j] || "";
+         }
+      }
+      display.textContent += lineBuffer.padEnd(terminal.cols, " ") + "\n";
    });
 }
 
@@ -42,8 +52,7 @@ function keyHandler(event) {
    } else if (event.key === "Enter") {
       term.lineFeed();
       term.readInputBuffer();
-   }
-   else if (event.key === "Backspace") {
+   } else if (event.key === "Backspace") {
       term.backspace();
    }
 }
