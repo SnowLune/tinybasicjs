@@ -14,19 +14,57 @@ h1 {
    display: flex;
    justify-content: center;
    align-items: center;
+   flex-flow: column wrap;
    background-color: #aaa;
 }
 
 .terminal {
-   background-color: #000000;
-   color: #00ff84;
-   font-family: "Fira Code", monospace;
-   font-size: 1rem;
-   resize: none;
-   width: fit-content;
-   padding: 5px;
+   display: flex;
+   flex-flow: column wrap;
+   justify-content: center;
+   align-items: center;
 }
 
-.terminal>pre {
-   width: auto;
+.terminal .display {
+   background-color: #001d0f;
+   color: #00ff84;
+   font-family: "Cascadia Code", monospace;
+   font-size: 0.5rem;
+   text-shadow: 0px 0px 2px #00ff8482, 0px 0px 12px #00ff84b1;
+   padding: 0;
+   margin-top: 2rem;
+   width: 100vw;
+   height: 100vh;
+   position: fixed;
+   top: 0;
+   left: 0;
+   z-index: 100;
+   border-radius: 0;
+}
+
+#input-fallback {
+   opacity: 1;
+   /* position: absolute; */
+   position: fixed;
+   top: 0;
+   left: 0;
+}
+
+@media screen and (min-width: 768px) {
+   .terminal .display {
+      background-color: #001d0f;
+      color: #00ff84;
+      font-family: "Tandy 1K", "Cascadia Code", monospace;
+      font-size: 10px;
+      text-shadow: 0px 0px 2px #00ff8482, 0px 0px 10px #00ff84b1;
+      padding: 25px 20px;
+      margin-top: 2rem;
+      width: auto;
+      flex: 0 0 content;
+      border-radius: 5% / 95%;
+      box-shadow: 0 0 10px #333;
+      position: static;
+      top: auto;
+      left: auto;
+   }
 }
