@@ -1,46 +1,10 @@
-const displayHz = 1 / 60;
-
-var displayRefreshInterval;
-var term = new Terminal();
-
 // Global Element Vars
 var display = document.querySelector(".display");
-var blank = document.querySelector(".blank");
 var clearButtonEl = document.getElementById("clear");
+var inputEl = document.getElementById("input-fallback");
 
-function displayRefresh(interval, terminal) {
-   let buffer = [];
-   let lastBuffer = [];
-   let cursor = {};
-   let lastCursor = {};
-
-   return (interval = setInterval(() => {
-      buffer = [...terminal.display].join(",");
-      cursor = `${terminal.cursor.x},${terminal.cursor.y}`;
-
-      if (buffer !== lastBuffer || cursor !== lastCursor) {
-         writeDisplay(terminal);
-      }
-      lastBuffer = buffer;
-      lastCursor = cursor;
-   }, displayHz * 1000));
-}
-
-function writeDisplay(terminal) {
-   display.textContent = "";
-   terminal.display.forEach((line, lineNumber) => {
-      let lineBuffer = "";
-
-      for (let j = 0; j <= line.length; j++) {
-         if (lineNumber === terminal.cursor.y && j === terminal.cursor.x) {
-            lineBuffer += terminal.cursorStrings[terminal.cursorType];
-         } else {
-            lineBuffer += line[j] || "";
-         }
-      }
-      display.textContent += lineBuffer.padEnd(terminal.cols, " ") + "\n";
-   });
-}
+// Terminal
+var term;
 
 // HANDLERS
 function keyHandler(event) {
@@ -48,10 +12,13 @@ function keyHandler(event) {
       " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`" +
       "abcdefghijklmnopqrstuvwxyz{|}~";
    if (printable.includes(event.key)) {
-      term.input(event.key.toUpperCase());
+      // term.getChar(event.key.toUpperCase());
    } else if (event.key === "Enter") {
-      term.lineFeed();
       term.readInputBuffer();
+
+      // Clear input element
+      inputEl.value = "";
+      term.print("\n");
    } else if (event.key === "Backspace") {
       term.backspace();
    }
@@ -62,7 +29,17 @@ clearButtonEl.addEventListener("click", () => {
    writeDisplay(term);
 });
 
+// Handle certain key events
 document.addEventListener("keydown", keyHandler);
+
+inputEl.addEventListener("blur", () => inputEl.focus());
+inputEl.addEventListener("input", () => {
+   term.getLine(inputEl.value);
+});
+
 document.addEventListener("DOMContentLoaded", () => {
-   displayRefresh(displayRefreshInterval, term);
+   // Set up terminal
+   term = new Terminal(display);
+
+   inputEl.focus();
 });

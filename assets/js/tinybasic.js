@@ -1,13 +1,3 @@
-function tbPrint(statement, terminal) {
-   terminal.print(statement);
-}
-
-function tbRemark(remark) {
-   return;
-}
-
-function tbInput(input) {}
-
 class Program {
    constructor(terminal) {
       this.VAR = {
@@ -41,10 +31,10 @@ class Program {
 
       // Single Array used by the program as @(I)
       this.ARRAY = [];
-      this.LIST = [];
+      this.PROGRAMLIST = [];
       this.MEMORY = "";
-      this.MEMSIZE = 2 ** 15;
-      this.MAXINT = this.MEMSIZE;
+      this.MEMSIZE = 2 ** 15 / 8;
+      this.MAXINT = this.MEMSIZE * 8;
 
       this.terminal = terminal;
    }
@@ -62,7 +52,12 @@ class Program {
    }
 
    // Gives the number of bytes left unused by the program.
-   SIZE() {}
+   SIZE(memory = this.MEMORY, memorySize = this.MEMSIZE) {
+      let size = memorySize - memory.length;
+      this.PRINT(size.toString());
+
+      return size;
+   }
 
    PRINT(string, terminal = this.terminal) {
       if (typeof string !== "string") {
@@ -73,17 +68,33 @@ class Program {
       terminal.lineFeed();
    }
 
+   LIST(start, count, statementString) {
+      if (this.PROGRAMLIST.length < start + count) {
+         let errorIndex = 0;
+         this.error(2, statementString, errorIndex);
+      }
+      for (let i = start; i < start + count; i++) {
+         this.PRINT(`${i} ${this.PROGRAMLIST[i]}`);
+      }
+   }
+
+   // Delete all statements
+   NEW() {
+      this.PROGRAMLIST = [];
+      this.MEMORY = "";
+   }
+
    REMARK(remarkString) {}
 
    addStatement(statementString, statementNumber) {
-      this.LIST[statementNumber] = statementString;
+      this.PROGRAMLIST[statementNumber] = statementString;
 
       if (this.MEMORY.length + statementString.length < this.MEMSIZE)
-         this.MEMORY = this.LIST.join("");
-      else this.ERROR(3);
+         this.MEMORY = this.PROGRAMLIST.join("");
+      else this.error(3);
    }
 
-   ERROR(errorType, statementString, errorIndex) {
+   error(errorType, statementString, errorIndex) {
       let errorString;
       const errorMessage = [null, "WHAT?", "HOW?", "SORRY"];
 
@@ -138,7 +149,7 @@ class Program {
                      string = match[0].replaceAll("'", "");
                   }
                } else {
-                  this.ERROR(1, command.join(" "), command.join(" ").length);
+                  this.error(1, command.join(" "), command.join(" ").length);
                   break;
                }
                this.PRINT(string, this.terminal);
@@ -148,21 +159,25 @@ class Program {
             case "REMARK":
                break;
             case "LIST":
-               this.LIST.forEach((s, i) => {
-                  this.PRINT(`${i} ${s}`);
-               });
                break;
             case "RUN":
                console.log("Running program...");
                break;
+            case "SIZE":
+               this.SIZE();
+               break;
+            case "NEW":
+               this.NEW();
+               break;
             default:
+               // If the first word is a statement number
                if (command[0] % 1 === 0) {
                   if (command.length === 1) {
-                     this.LIST[command[0]] = undefined;
+                     this.PROGRAMLIST[command[0]] = undefined;
                   } else
                      this.addStatement(command.splice(1).join(" "), command[0]);
                } else {
-                  this.ERROR(3, command.join(" "));
+                  this.error(1, command.join(" "));
                }
                break;
          }
