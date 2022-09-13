@@ -27,6 +27,10 @@ class Terminal
       // Contains all characters to be rendered
       this.outputBuffer = [];
 
+      // Audible bell
+      this.bellAudio = new Audio("./assets/sound/750hzbeep.ogg");
+      this.bellAudio.fadeTimeout = 0;
+
       this.program = new Program(this);
       this.output = new Output(this, displayEl);
 
@@ -38,6 +42,7 @@ class Terminal
       return s.split("").map(c => c.charCodeAt());
    }
    charToString(c) {
+      console.log(c);
       let s = c.map(c=>String.fromCharCode(c)).join("");
       return s;
    }
@@ -45,6 +50,24 @@ class Terminal
    scrollByLines(lines = 1)
    {
       this.outputBuffer = this.outputBuffer.slice(this.cols * lines);
+   }
+
+   bell() 
+   {
+      if (this.bellAudio.readyState === 4)
+         if (this.bellAudio.paused === false 
+            && this.bellAudio.fadeTimeout === 0)
+         {
+            this.bellAudio.fadeTimeout = setTimeout(() => 
+            {
+               this.bellAudio.pause();
+               this.bellAudio.currentTime = 0;
+               this.bellAudio.play();
+               this.bellAudio.fadeTimeout = 0;
+            }, 50);
+         }
+         else
+            this.bellAudio.play();
    }
 
    carriageReturn()
@@ -66,9 +89,12 @@ class Terminal
 
    backspace()
    {
-      if (this.cursor.x === 0 && this.cursor.y === 0)
+      if (this.cursor.x === 0 && this.cursor.y === 0) {
+         this.bell();
          return false;
+      }
       else if (this.inputBuffer.length === 0) {
+         this.bell();
          console.warn("Input buffer is empty.");
          return false;
       }
@@ -164,13 +190,16 @@ class Terminal
 
    readInputBuffer(input = this.inputBuffer)
    {
+      input.pop();
+      input = this.charToString(input)
+
       switch (input) {
-         case this.stringToChar("CLEAR"):
+         case "CLEAR":
             this.clearScreen();
             break;
          default:
             // Pass to program for further parsing
-            this.program.parse(input);
+            this.program.parse([input]);
             break;
       }
 

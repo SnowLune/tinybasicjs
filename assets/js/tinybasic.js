@@ -100,6 +100,7 @@ class Program {
       const errorMessage = [null, "WHAT?", "HOW?", "SORRY"];
 
       this.PRINT(errorMessage[errorType]);
+      this.terminal.bell();
 
       switch (errorType) {
          case 1:
@@ -118,8 +119,6 @@ class Program {
    }
 
    parse(statement) {
-      statement = [this.terminal.charToString(statement)];
-
       // Separate concatenated commands
       if (statement.includes(";")) {
          statement = statement.split(";");
