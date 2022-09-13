@@ -1,7 +1,7 @@
 // Global Element Vars
 var display = document.querySelector(".display");
 var clearButtonEl = document.getElementById("clear");
-var inputEl = document.getElementById("input-fallback");
+var inputEl = document.getElementById("input");
 
 // Terminal
 var term;
@@ -31,7 +31,7 @@ function keyHandler(event)
 
 function inputHandler(event)
 {
-   const c = event.target.value.split("").pop().charCodeAt();
+   const c = event.target.value.split("").pop().toUpperCase().charCodeAt();
    clearInput();
 
    if (c >= printableAsciiStart && c <= printableAsciiEnd) {

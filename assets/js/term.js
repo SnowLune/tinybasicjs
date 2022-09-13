@@ -33,6 +33,15 @@ class Terminal
       this.output.init();
    }
 
+   // Convert a string to an array of ASCII code integers
+   stringToChar(s) {
+      return s.split("").map(c => c.charCodeAt());
+   }
+   charToString(c) {
+      let s = c.map(c=>String.fromCharCode(c)).join("");
+      return s;
+   }
+
    scrollByLines(lines = 1)
    {
       this.outputBuffer = this.outputBuffer.slice(this.cols * lines);
@@ -52,21 +61,22 @@ class Terminal
       }
 
       // Move cursor down one line and to the left
-      this.cursorPosition(0, this.cursor.y + 1);
+      this.cursorPosition(this.cursor.y + 1, 0);
    }
 
    backspace()
    {
-      if (this.cursor.x === 0 && this.cursor.y === 0) return false;
+      if (this.cursor.x === 0 && this.cursor.y === 0)
+         return false;
       else if (this.inputBuffer.length === 0) {
          console.warn("Input buffer is empty.");
          return false;
       }
 
       let i = this.getIndexFromPosition(this.cursor.y, this.cursor.x);
-      this.outputBuffer = this.outputBuffer
-         .slice(0, i)
-         .concat(this.outputBuffer.slice(i + 1));
+      this.inputBuffer.splice(this.inputBuffer.length - 1, 1);
+      this.outputBuffer.splice(this.outputBuffer.length - 1, 1);
+      this.cursorBack();
    }
 
    clearScreen()
@@ -77,12 +87,26 @@ class Terminal
    }
 
    // Set the position of the cursor Absolutely
-   cursorPosition(x = 0, y = 0)
+   cursorPosition(y = 0, x = 0)
    {
-      x = Math.min(this.output.cols - 1, x);
       y = Math.min(this.output.lines - 1, y);
-      this.cursor.x = x;
+      x = Math.min(this.output.cols - 1, x);
       this.cursor.y = y;
+      this.cursor.x = x;
+   }
+
+   cursorBack() {
+      if (this.cursor.x === 0 && this.cursor.y > 0)
+         this.cursorPosition(this.cursor.y - 1, this.cols - 1);
+      else
+         this.cursorPosition(this.cursor.y, this.cursor.x - 1);
+   }
+
+   cursorForward() {
+      if (this.cursor.x === this.cols - 1 && this.cursor.y < this.lines - 1)
+         this.cursorPosition(this.cursor.y + 1, 0);
+      else
+         this.cursorPosition(this.cursor.y, this.cursor.x + 1);
    }
 
    // Convert a line/column position to the corresponding zero-based index
@@ -119,7 +143,7 @@ class Terminal
       if (char === CR || this.cursor.x === this.cols - 1)
          this.lineFeed();
       else
-         this.cursorPosition(this.cursor.x + 1, this.cursor.y);
+         this.cursorPosition(this.cursor.y, this.cursor.x + 1);
    }
 
    putChar(c)
@@ -130,23 +154,23 @@ class Terminal
    getChar(char)
    {
       this.inputBuffer.push(char);
-
-      // if (char === "\r") this.readInputBuffer();
-
+      
       // echo input
       this.putCharAtCursor(char);
+
+      if (char === CR)
+         this.readInputBuffer();
    }
 
    readInputBuffer(input = this.inputBuffer)
    {
-      input = input.trim();
       switch (input) {
-         case "CLEAR":
+         case this.stringToChar("CLEAR"):
             this.clearScreen();
             break;
          default:
             // Pass to program for further parsing
-            this.program.parse([input]);
+            this.program.parse(input);
             break;
       }
 
@@ -154,15 +178,17 @@ class Terminal
       this.inputBuffer = [];
    }
 
-   print(stream)
+   print(string)
    {
-      if (typeof stream !== "string") {
+      if (typeof string !== "string") {
          console.error("Invalid stream type, expected string.");
          return;
       }
-      for (let i = 0; i < stream.length; i++) {
-         if (stream[i] === "\n" || stream[i] === "\r") this.lineFeed();
-         else this.putCharAtCursor(stream[i].toUpperCase());
+
+      let chars = this.stringToChar(string);
+
+      for (let i = 0; i < chars.length; i++) {
+         this.putCharAtCursor(chars[i]);
       }
    }
 }

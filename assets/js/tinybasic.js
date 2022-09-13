@@ -103,11 +103,10 @@ class Program {
 
       switch (errorType) {
          case 1:
-            errorString =
-               statementString.slice(0, errorIndex) +
-               "?" +
-               statementString.slice(errorIndex);
-            this.PRINT(errorString);
+            errorIndex = statementString.length;
+            errorString = statementString.split("")
+            errorString.splice(errorIndex, 1, "?");
+            this.PRINT(errorString.join(""));
             break;
          case 2:
             break;
@@ -119,6 +118,8 @@ class Program {
    }
 
    parse(statement) {
+      statement = [this.terminal.charToString(statement)];
+
       // Separate concatenated commands
       if (statement.includes(";")) {
          statement = statement.split(";");
