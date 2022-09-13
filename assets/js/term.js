@@ -1,10 +1,28 @@
-class Terminal {
-   constructor(displayEl) {
+// CHARACTER CODES
+const NUL = 0;
+const BS = 8;
+const HT = 9;
+const LF = 10;
+const CR = 13;
+// SPACE
+const SP = 32;
+// ASCII START: SPACE
+const printableAsciiStart = 32;
+// ASCII END: TILDE
+const printableAsciiEnd = 126;
+// CURSORS / MARKERS
+const markerFullBlock = 32;
+const markerUnderline = 95;
+
+class Terminal
+{
+   constructor(displayEl)
+   {
       this.lines = 24;
       this.cols = 80;
 
       this.cursor = { x: 0, y: 0 };
-      //
+      // The current input line
       this.inputBuffer = [];
       // Contains all characters to be rendered
       this.outputBuffer = [];
@@ -15,87 +33,52 @@ class Terminal {
       this.output.init();
    }
 
-   createNewBuffer() {
-      if (this.output.initialized) this.setCursor(0, 0);
+   scrollByLines(lines = 1)
+   {
+      this.outputBuffer = this.outputBuffer.slice(this.cols * lines);
    }
 
-   lineFeed() {
-      // If at the last line, scroll text and reset cursor column to 0
+   carriageReturn()
+   {
+      this.cursor.x = 0;
+      this.lineFeed();
+   }
+
+   lineFeed()
+   {
+      // If at the last line, scroll text
       if (this.cursor.y === this.lines - 1) {
-         this.output.framebuffer = this.output.framebuffer.slice(1);
-         this.output.framebuffer.push([]);
-         this.setCursor(0, this.cursor.y);
+         this.scrollByLines(1);
       }
-      // Set cursor to the left and down
-      else this.setCursor(0, this.cursor.y + 1);
+
+      // Move cursor down one line and to the left
+      this.cursorPosition(0, this.cursor.y + 1);
    }
 
-   backspace() {
+   backspace()
+   {
       if (this.cursor.x === 0 && this.cursor.y === 0) return false;
       else if (this.inputBuffer.length === 0) {
          console.warn("Input buffer is empty.");
          return false;
       }
 
-      // // The string contents of the line we're modifying
-      // let lineBuffer;
-      // // The index of the line being modified
-      // let line;
-      // // The index of the char being deleting
-      // let column;
-
-      // if (this.cursor.x === 0) {
-      //    line = this.cursor.y - 1;
-      //    column =
-      //       this.display[line].length === 0 ? 0 : this.display[line].length - 1;
-      // } else {
-      //    line = this.cursor.y;
-      //    column = this.cursor.x - 1;
-      // }
-
-      // console.log({ column, line });
-
-      // lineBuffer = this.display[line];
-
-      // if (column === 0) {
-      //    this.display[line] = lineBuffer.slice(column + 1);
-      // } else {
-      //    this.display[line] =
-      //       lineBuffer.slice(0, column) + lineBuffer.slice(column + 1);
-      // }
-
-      // this.inputBuffer = this.inputBuffer.slice(0, this.inputBuffer.length - 1);
       let i = this.getIndexFromPosition(this.cursor.y, this.cursor.x);
       this.outputBuffer = this.outputBuffer
          .slice(0, i)
          .concat(this.outputBuffer.slice(i + 1));
-      // this.setCursor(column, line);
    }
 
-   del(line, cursor = this.cursor) {
-      let splitLine = line.split("");
-      splitLine[cursor.x] = null;
-      splitLine = splitLine.filter((c) => c !== null);
-      splitLine.push(" ");
-   }
-
-   clearScreen() {
+   clearScreen()
+   {
       this.outputBuffer = [];
       this.cursor.x = 0;
       this.cursor.y = 0;
    }
 
-   // Move the cursor forwards or backwards from it's current position
-   moveCursor(x) {
-      let currentX = this.cursor.x;
-      let currentY = this.cursor.y;
-
-      // if ()
-      // this.setCursor
-   }
-
    // Set the position of the cursor Absolutely
-   setCursor(x = 0, y = 0) {
+   cursorPosition(x = 0, y = 0)
+   {
       x = Math.min(this.output.cols - 1, x);
       y = Math.min(this.output.lines - 1, y);
       this.cursor.x = x;
@@ -103,36 +86,59 @@ class Terminal {
    }
 
    // Convert a line/column position to the corresponding zero-based index
-   getIndexFromPosition(line, column) {
+   getIndexFromPosition(line, column)
+   {
       let index = line * (this.output.cols - 1) + column + line;
       return index;
    }
 
+   getPositionFromIndex(index) {
+      if (index > this.lines * this.cols - 1) {
+         console.error("Index out of bounds.")
+         return false;
+      }
+      else {
+         let line = (index + 1) / this.cols;
+         let column = index % this.cols;
+         return { line, column }
+      }
+   }
+
    // Output a character at an absolute position in the framebuffer
-   putCharAtPosition(char, line, column) {
+   putCharAtPosition(char, line, column)
+   {
       let bufferIndex = this.getIndexFromPosition(line, column);
       this.outputBuffer[bufferIndex] = char;
    }
 
    // Output a character at the cursor and move the cursor forward
-   putChar(char, line = this.cursor.y, column = this.cursor.x) {
-      this.putCharAtPosition(char, line, column);
+   putCharAtCursor(char)
+   {
+      this.putCharAtPosition(char, this.cursor.y, this.cursor.x);
 
-      if (this.cursor.x === this.cols - 1) this.lineFeed();
-      else this.setCursor(this.cursor.x + 1, this.cursor.y);
+      if (char === CR || this.cursor.x === this.cols - 1)
+         this.lineFeed();
+      else
+         this.cursorPosition(this.cursor.x + 1, this.cursor.y);
    }
 
-   getChar(char) {
-      this.inputBuffer += char;
-      this.putChar(char);
+   putChar(c)
+   {
+      this.outputBuffer += c;
    }
 
-   getLine(line) {
-      this.inputBuffer = line;
-      this.print(this.inputBuffer);
+   getChar(char)
+   {
+      this.inputBuffer.push(char);
+
+      // if (char === "\r") this.readInputBuffer();
+
+      // echo input
+      this.putCharAtCursor(char);
    }
 
-   readInputBuffer(input = this.inputBuffer) {
+   readInputBuffer(input = this.inputBuffer)
+   {
       input = input.trim();
       switch (input) {
          case "CLEAR":
@@ -145,110 +151,137 @@ class Terminal {
       }
 
       // Clear input buffer
-      this.inputBuffer = "";
+      this.inputBuffer = [];
    }
 
-   print(stream) {
+   print(stream)
+   {
       if (typeof stream !== "string") {
          console.error("Invalid stream type, expected string.");
          return;
       }
       for (let i = 0; i < stream.length; i++) {
          if (stream[i] === "\n" || stream[i] === "\r") this.lineFeed();
-         else this.putChar(stream[i].toUpperCase());
+         else this.putCharAtCursor(stream[i].toUpperCase());
       }
    }
 }
 
-class Output {
-   constructor(terminal, displayEl) {
+class Output 
+{
+   constructor(terminal, displayEl)
+   {
       this.lines = terminal.lines;
       this.cols = terminal.cols;
       this.display = displayEl;
       this.terminal = terminal;
-      // Stores a complete screen render, 80x24 characters
-      this.framebuffer = [];
 
+      this.framebuffer = new Array(this.lines);
       this.refreshInterval = 0;
       this.hz = 1 / 60;
       this.initialized = false;
 
-      // VT220 style cursors, 0 for block; 1 for underline
-      this.cursorStrings = ["█", "_"];
-      this.cursorType = 0;
+      this.cursorType = markerFullBlock;
    }
 
-   init() {
+   init()
+   {
       // Clear display element
       this.display.textContent = "";
 
-      // Initialize framebuffer with null chars
       for (let line = 0; line < this.lines; line++) {
-         this.framebuffer[line] = [];
+         // New line is x characters long
+         this.framebuffer[line] = new Array(this.cols)
+
          for (let column = 0; column < this.cols; column++) {
-            this.framebuffer[line][column] = "\0";
+            // Initialize each cell with NUL
+            this.framebuffer[line][column] = NUL
          }
       }
-      if (this.framebuffer.length === 24) {
+
+      if (this.framebuffer.length === this.lines) {
          this.initialized = true;
          this.run();
          return true;
       } else return false;
    }
 
-   render() {
-      if (this.initialized == false) {
+   render() 
+   {
+      if (this.initialized === false) {
          console.error("Terminal display not initialized.");
          return false;
       }
+
+      // Render start time for debug
+      let startTime = Date.now();
 
       let outputBufferIndex = 0;
 
       for (let line = 0; line < this.lines; line++) {
          for (let column = 0; column < this.cols; column++) {
+            // Current outputBuffer character
             let bufferChar = this.terminal.outputBuffer[outputBufferIndex];
-            if (bufferChar !== undefined) {
-               switch (bufferChar) {
-                  case "\n":
-                     line++;
-                     break;
-                  case "\r":
-                     line++;
-                     break;
-                  case "\t":
-                     for (let t = 0; t < 8; t++) {
-                        this.framebuffer[line][column];
-                     }
-                     break;
-                  default:
-                     this.framebuffer[line][column] = bufferChar;
-                     break;
-               }
-            }
-            // If not null char, put null char
-            else if (this.framebuffer[line][column] !== "\0") {
-               this.framebuffer[line][column] = "\0";
-            }
 
-            // if (outputBufferIndex === this.terminal.outputBuffer.length - 1)
-            //    console.log(); // return;
-            // else
+            if (bufferChar === undefined) {
+               this.framebuffer[line][column] = NUL;
+            }
+            else if (bufferChar === CR || bufferChar === LF) {
+               this.framebuffer[line].fill(NUL, column, this.cols);
+            }
+            else if (bufferChar === HT) {
+               // TODO: insert 8 spaces for tab
+            }
+            else {
+               // Put printable character
+               this.framebuffer[line][column] = bufferChar;
+            }
             outputBufferIndex++;
          }
       }
 
-      this.display.textContent = "";
+      // Purge the display
+      this.display.innerHTML = "";
 
-      this.framebuffer.forEach((line, lineN) => {
-         if (lineN === this.terminal.cursor.y) {
-            line[this.terminal.cursor.x] = this.cursorStrings[this.cursorType];
+      // Paint the framebuffer to the display
+      for (let line = 0; line < this.lines; line++) {
+         for (let column = 0; column < this.cols; column++) {
+            let char;
+
+            if (this.framebuffer[line][column] === NUL)
+               char = String.fromCharCode(SP);
+            else
+               char = String.fromCharCode(this.framebuffer[line][column]);
+
+            // Append to display element
+            this.display.textContent += char;
          }
-         this.display.textContent += line.join("").replaceAll("\0", " ");
-         this.display.textContent += "\n";
-      });
+         this.display.textContent += String.fromCharCode(LF);
+      }
+
+      // Insert cursor
+      let cursorIndex = this.terminal.getIndexFromPosition(
+         this.terminal.cursor.y, 
+         this.terminal.cursor.x
+      ) + this.terminal.cursor.y;
+
+      let cursor;
+      
+      if (this.cursorType === markerUnderline)
+         cursor = `<span class="cursor underline-cursor">`
+      else 
+         cursor = `<span class="cursor fullblock-cursor">`
+      cursor += `${String.fromCharCode(this.cursorType)}</span>`;
+      
+      let displayTemp = this.display.textContent.split("");
+      displayTemp.splice(cursorIndex, 1, cursor);
+      this.display.innerHTML = displayTemp.join("");
+
+      console.debug(`Rendered frame in ${Date.now() - startTime} ms.`);
    }
 
-   run() {
+   run()
+   {
       let buffer;
       let lastBuffer;
       let cursor;
@@ -260,11 +293,15 @@ class Output {
 
          if (buffer !== lastBuffer || cursor !== lastCursor) {
             this.render();
-            console.log("rendered", Date.now());
          }
 
          lastBuffer = buffer;
          lastCursor = cursor;
       }, this.hz * 1000);
+   }
+
+   stop()
+   {
+      clearInterval(this.refreshInterval);
    }
 }

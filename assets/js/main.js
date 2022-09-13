@@ -6,40 +6,53 @@ var inputEl = document.getElementById("input-fallback");
 // Terminal
 var term;
 
-// HANDLERS
-function keyHandler(event) {
-   const printable =
-      " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`" +
-      "abcdefghijklmnopqrstuvwxyz{|}~";
-   if (printable.includes(event.key)) {
-      // term.getChar(event.key.toUpperCase());
-   } else if (event.key === "Enter") {
-      term.readInputBuffer();
+// Resets input value to a specific string 
+// to prevent auto-caps wonkiness on mobile
+function clearInput(input = inputEl)
+{
+   input.value = "> ";
+   return input.value;
+}
 
+// HANDLERS
+function keyHandler(event)
+{
+   if (event.key === "Enter") {
+      event.preventDefault();
+      term.getChar(CR)
       // Clear input element
-      inputEl.value = "";
-      term.print("\n");
+      clearInput();
    } else if (event.key === "Backspace") {
+      event.preventDefault();
+
       term.backspace();
    }
 }
 
-clearButtonEl.addEventListener("click", () => {
-   term.clearScreen();
-   writeDisplay(term);
-});
+function inputHandler(event)
+{
+   const c = event.target.value.split("").pop().charCodeAt();
+   clearInput();
+
+   if (c >= printableAsciiStart && c <= printableAsciiEnd) {
+      term.getChar(c);
+   }
+   else 
+      return false;
+}
+
+clearButtonEl.addEventListener("click", () => { term.clearScreen(); });
 
 // Handle certain key events
 document.addEventListener("keydown", keyHandler);
 
 inputEl.addEventListener("blur", () => inputEl.focus());
-inputEl.addEventListener("input", () => {
-   term.getLine(inputEl.value);
-});
+inputEl.addEventListener("input", inputHandler);
 
 document.addEventListener("DOMContentLoaded", () => {
    // Set up terminal
    term = new Terminal(display);
 
    inputEl.focus();
+   clearInput();
 });

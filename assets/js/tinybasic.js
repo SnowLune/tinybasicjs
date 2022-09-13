@@ -1,5 +1,15 @@
 class Program {
    constructor(terminal) {
+      this.MEMSIZE = 2 ** 15 / 8;
+      this.MAXINT = this.MEMSIZE * 8;
+      this.MEMORY = "";
+
+      this.PROGRAMLIST = [];
+
+      // Single Array used by the program as @(I)
+      this.ARRAY = new Array(this.SIZE() / 2);
+      this.ARRAY.fill(0);
+
       this.VAR = {
          A: undefined,
          B: undefined,
@@ -29,13 +39,6 @@ class Program {
          Z: undefined
       };
 
-      // Single Array used by the program as @(I)
-      this.ARRAY = [];
-      this.PROGRAMLIST = [];
-      this.MEMORY = "";
-      this.MEMSIZE = 2 ** 15 / 8;
-      this.MAXINT = this.MEMSIZE * 8;
-
       this.terminal = terminal;
    }
 
@@ -54,8 +57,6 @@ class Program {
    // Gives the number of bytes left unused by the program.
    SIZE(memory = this.MEMORY, memorySize = this.MEMSIZE) {
       let size = memorySize - memory.length;
-      this.PRINT(size.toString());
-
       return size;
    }
 
@@ -123,8 +124,6 @@ class Program {
          statement = statement.split(";");
          statement = statement.map((c) => c.trim());
       }
-
-      console.log(statement);
 
       statement.forEach((command) => {
          command = command.trim();
